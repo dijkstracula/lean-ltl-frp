@@ -1,0 +1,12 @@
+name = "ltl-frp"
+version = "0.1.0"
+defaultTargets = ["LtlFrp", "Examples"]
+
+[[lean_lib]]
+name = "LtlFrp"
+
+# One module per blog post; each imports the shared `LtlFrp` library
+# (and the previous post's file where it reuses that scenario).
+[[lean_lib]]
+name = "Examples"
+globs = ["Examples.+"]
