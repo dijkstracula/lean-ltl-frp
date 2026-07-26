@@ -1,3 +1,3 @@
-import LtlFrp.FRP.Signal
-import LtlFrp.FRP.Refining
+import LtlFrp.FRP.Simple
+import LtlFrp.FRP.Verified
 import LtlFrp.FRP.Hoare

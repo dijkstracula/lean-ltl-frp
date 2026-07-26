@@ -9,7 +9,7 @@ abbrev Trace σ := Nat → σ
 def now (t : Trace σ) : σ := t 0
 -- ANCHOR_END: now
 -- ANCHOR: drop
-def drop (n : Nat) (t : Trace σ) : Trace σ := fun n' => t (n' + n)
+def drop (n : Nat) (t : Trace σ) : Trace σ := fun n' => t (n + n')
 -- ANCHOR_END: drop
 
 -- ANCHOR: state-prop

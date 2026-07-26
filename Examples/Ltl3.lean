@@ -9,11 +9,11 @@ open LTL
 
 def validTrace (t : Trace VMState) : Prop :=
   t 0 = init ∧
-  ∀ i, ∃ a, ∃ h : validAction (t i) a, t (1 + i) = vmStep (t i) a h
+  ∀ i, ∃ a, ∃ h : validAction (t i) a, t (i + 1) = vmStep (t i) a h
 
 def noFreeLunch : TraceProp VMState :=
-  □ ((atom (fun s => s.dispensed.isNone ∧ s.coins < 2)) ⟹
-    (○ (atom (fun s => s.dispensed.isNone))))
+  □ (⌜fun s => s.dispensed.isNone ∧ s.coins < 2⌝ ⟹
+    (○ ⌜fun s => s.dispensed.isNone⌝))
 
 theorem noFreeLunch_holds : ∀ (t : Trace VMState) (hv : validTrace t), noFreeLunch t := by
   intro t ⟨Hinit, Hcons⟩
@@ -26,5 +26,11 @@ theorem noFreeLunch_holds : ∀ (t : Trace VMState) (hv : validTrace t), noFreeL
   case DropCoin => assumption
   case Choose f =>
     cases f <;> simp <;> simp at h_step <;> simp at h_valid <;> lia
+
+def hopperEmpty (s: VMState) : Prop := s.coins = 0
+def isCurrentlyEmpty := ⌜hopperEmpty⌝
+
+def mustPayFirst : Trace VMState → Prop :=
+  ⌜(·.dispensed = none)⌝ U ⌜(·.coins ≥ 2)⌝
 
 end VM.LTLTheorems

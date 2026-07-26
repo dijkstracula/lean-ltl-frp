@@ -1,7 +1,7 @@
 -- Worked example for lean-ltl post 7 ("Hoare Logic and loop invariants redux").
 -- The combinators this post is about (hoare_skip / hoare_seq / hoare_if / iter_one /
 -- Event.when / RSignal.while, plus <$$>, ⦃⦄, ⟹) live in LtlFrp.FRP.Hoare and
--- LtlFrp.FRP.Refining.
+-- LtlFrp.FRP.
 
 import LtlFrp
 
@@ -10,7 +10,7 @@ def Nat.factorial : Nat → Nat
 | (n + 1) => (n + 1) * n.factorial
 
 namespace Ltl7
-open FRP.Refining
+open FRP
 
 -- The Hoare rules are functor laws: skip = identity map, seq = composition.
 example : hoare_seq (g <$$> ·) (f <$$> ·) = (g <$$> f <$$> ·) := by rfl
@@ -31,22 +31,22 @@ namespace IncrSqrt
 def incr (i : {i : Int // i = 0}) : {i : Int // i > 0} := ⟨i.val + 1, by lia⟩
 def sqrt (i : {i : Int // i > 0}) : {i : Int // i >= 0} := ⟨i.val, by lia⟩
 
-def incr_sig : ⦃ i : Int // i = 0 ⦄ ⟹ ⦃ i : Int // i > 0 ⦄ := FRP.Refining.map incr
-def sqrt_sig : ⦃ i : Int // i > 0 ⦄ ⟹ ⦃ i : Int // i ≥ 0 ⦄ := FRP.Refining.map sqrt
+def incr_sig : ⦃ i : Int // i = 0 ⦄ ⟹ ⦃ i : Int // i > 0 ⦄ := FRP.RSignal.map incr
+def sqrt_sig : ⦃ i : Int // i > 0 ⦄ ⟹ ⦃ i : Int // i ≥ 0 ⦄ := FRP.RSignal.map sqrt
 
-def z : □ Int // (· = 0)  := FRP.Refining.RSignal.const ⟨0, by lia⟩
+def z : □ Int // (· = 0)  := FRP.RSignal.const ⟨0, by lia⟩
 def z2 : □ Int // (· > 0) := incr_sig z
 def z3 : □ Int // (· ≥ 0) := sqrt_sig z2
 
-#check (FRP.Refining.RSignal.weaken (by lia) : □ Int // (· = 0) → □ Int // (· >= 0))
+#check (FRP.RSignal.weaken (by lia) : □ Int // (· = 0) → □ Int // (· >= 0))
 end IncrSqrt
 
 -- Combining two constant signals with map2.
 namespace AddDemo
-def z1 : □ Int // (· = 5)  := FRP.Refining.RSignal.const ⟨5, by lia⟩
-def z2 : □ Int // (· = 7)  := FRP.Refining.RSignal.const ⟨7, by lia⟩
+def z1 : □ Int // (· = 5)  := FRP.RSignal.const ⟨5, by lia⟩
+def z2 : □ Int // (· = 7)  := FRP.RSignal.const ⟨7, by lia⟩
 def z3 : □ Int // (· > 10) :=
-  FRP.Refining.map2 (fun ⟨a, ah⟩ ⟨b, bh⟩ => ⟨a + b, by lia⟩) z1 z2
+  FRP.RSignal.map2 (fun ⟨a, ah⟩ ⟨b, bh⟩ => ⟨a + b, by lia⟩) z1 z2
 end AddDemo
 
 -- Syracuse / Collatz: hoare_if picks the even/odd branch, preserving n > 0.
@@ -66,7 +66,7 @@ def syra : (□ Int // (· > 0)) → (□ Int // (· > 0)) :=
   hoare_if (· % 2 = 0) syra_even syra_odd
 
 def positives : □ Int // (· > 0) :=
-  FRP.Refining.Signal.collect (fun t => ⟨ Int.ofNat t + 1, by lia⟩)
+  FRP.RSignal.collect (fun t => ⟨ Int.ofNat t + 1, by lia⟩)
 
 def syracuse_trajectory (n : Int) (h_pos : n > 0) : □ Int // (· > 0) :=
   FRP.scan syra_step_val ⟨n, h_pos⟩
@@ -89,7 +89,7 @@ def z : □ Nat := (·.factorial) <$> i
 def fact_loop : □ (Nat × Nat) // (fun ⟨i, z⟩ => z = i.factorial) :=
   let s : □ (Nat × Nat) := Prod.mk <$> i <*> z
   have inv : ∀ t, (s t).2 = (s t).1.factorial := by intro t; rfl
-  FRP.Refining.Signal.collect (fun t => ⟨s t, inv t⟩)
+  FRP.RSignal.collect (fun t => ⟨s t, inv t⟩)
 
 #eval (fact_loop.val 5)
 

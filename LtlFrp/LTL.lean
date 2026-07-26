@@ -29,6 +29,7 @@ prefix:max "□ " => always
 prefix:max "◇ " => eventually
 prefix:max "○ " => next
 infixr:55 " U " => LTL.until_then
+notation:max "⌜" p "⌝" => LTL.atom p
 -- ANCHOR_END: ltl-notation
 
 -- "True" as a trace predicate: holds for any trace, at any time

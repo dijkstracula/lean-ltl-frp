@@ -1,6 +1,6 @@
 {"version": "1.2.0",
  "packagesDir": ".lake/packages",
  "packages": [],
- "name": "«ltl-frp»",
+ "name": "«lean-ltl-frp»",
  "lakeDir": ".lake",
  "fixedToolchain": false}

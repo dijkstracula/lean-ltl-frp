@@ -1,4 +1,4 @@
-name = "ltl-frp"
+name = "lean-ltl-frp"
 version = "0.1.0"
 defaultTargets = ["LtlFrp", "Examples"]
 

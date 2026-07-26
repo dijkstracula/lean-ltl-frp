@@ -1,5 +1,5 @@
 -- Worked example for lean-ltl post 4b ("Reactive Events and LTL.eventually").
--- Machinery this post introduces (Event, fires, merge, latch) lives in LtlFrp.FRP.Signal.
+-- Machinery this post introduces (Event, fires, merge, latch) lives in LtlFrp.FRP.Simple.
 
 import LtlFrp
 import Examples.Ltl4
@@ -28,7 +28,7 @@ def carLight (button : ◇ Unit) : □ Light :=
     | none    => cycling t
 
 def pedCrossing (button : ◇ Unit) : □ (Light × WalkSign) :=
-  FRP.map2 Prod.mk (carLight button) (walkSignal button)
+  FRP.Signal.map2 Prod.mk (carLight button) (walkSignal button)
 
 def onNone : Light → Light
   | .Green => .Yellow
@@ -39,12 +39,12 @@ def onNone : Light → Light
 
 def walkOnlyWhenRed (button : ◇ Unit) : Prop :=
   LTL.always
-    (LTL.atom (fun (traffic, ped) => ped = .Walk → traffic = .Red))
+    ⌜fun (traffic, ped) => ped = .Walk → traffic = .Red⌝
     (pedCrossing button)
 
 theorem walkSafe (button : ◇ Unit) : walkOnlyWhenRed button := by
   simp [walkOnlyWhenRed, pedCrossing]
-  simp [LTL.always, LTL.atom, now, drop, FRP.map2]
+  simp [LTL.always, LTL.atom, now, drop, FRP.Signal.map2]
   simp [carLight, walkSignal]
   intro t
   split <;> simp
@@ -52,8 +52,7 @@ theorem walkSafe (button : ◇ Unit) : walkOnlyWhenRed button := by
 def spammer : ◇ Unit := ⟨fun _ => some (), ⟨0, by simp⟩⟩
 
 def carsEventuallyGreen (button : ◇ Unit) : Prop :=
-  LTL.always (LTL.eventually (LTL.atom (· = .Green)))
-    (carLight button)
+  (□◇ ⌜(· = .Green)⌝) (carLight button)
 
 example : ¬ carsEventuallyGreen spammer := by
   simp [carsEventuallyGreen, spammer]

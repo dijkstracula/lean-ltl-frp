@@ -9,7 +9,7 @@
 import LtlFrp
 
 namespace Ltl8
-open FRP.Refining
+open FRP
 
 -- Bit-width bounds vocabulary.
 namespace Bounds
@@ -47,13 +47,13 @@ def add
     (a : □ Nat // (boundedBy n))
     (b : □ Nat // (boundedBy m))
     : □ Nat // boundedBy (n + m) :=
-  FRP.Refining.map2 (fun ⟨x, hx⟩ ⟨y, hy⟩ => ⟨x + y, by lia⟩) a b
+  FRP.RSignal.map2 (fun ⟨x, hx⟩ ⟨y, hy⟩ => ⟨x + y, by lia⟩) a b
 
 def mul
     (a : □ Nat // (boundedBy n))
     (b : □ Nat // (boundedBy m))
     : □ Nat // boundedBy (n * m) :=
-  FRP.Refining.map2  (inv_c := boundedBy (n * m))
+  FRP.RSignal.map2  (inv_c := boundedBy (n * m))
  (fun ⟨x, hx⟩ ⟨y, hy⟩ => ⟨x * y, by exact Nat.mul_le_mul hx hy⟩) a b
 
 def example_pipeline

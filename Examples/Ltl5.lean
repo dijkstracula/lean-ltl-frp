@@ -1,5 +1,5 @@
 -- Worked example for lean-ltl post 5 ("Stateful combinators, safety, and liveness").
--- Machinery this post introduces (scan, accumulate) lives in LtlFrp.FRP.Signal / LtlFrp.FRP.Refining.
+-- Machinery this post introduces (scan, accumulate) lives in LtlFrp.FRP.Simple / LtlFrp.FRP.
 
 import LtlFrp
 
