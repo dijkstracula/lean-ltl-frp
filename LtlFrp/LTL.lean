@@ -10,13 +10,11 @@ def next (p : Trace σ → Prop) (t : Trace σ) : Prop := p (drop 1 t)
 -- ANCHOR_END: next
 
 -- ANCHOR: always
-def always (p : Trace σ → Prop) (t : Trace σ) : Prop :=
-  ∀ i, p (drop i t)
+def always (p : Trace σ → Prop) (t : Trace σ) : Prop := ∀ i, p (drop i t)
 -- ANCHOR_END: always
 
 -- ANCHOR: eventually
-def eventually (p : Trace σ → Prop) (t : Trace σ) : Prop :=
-  ∃ i, p (drop i t)
+def eventually (p : Trace σ → Prop) (t : Trace σ) : Prop := ∃ i, p (drop i t)
 -- ANCHOR_END: eventually
 
 -- ANCHOR: until

@@ -70,4 +70,19 @@ theorem a20_high_order_bits_unset
   (base off : {a : Int // unsignedMax (2^16) a})
   : (base.val * 16 + off.val) / 2^21 = 0 := by lia
 
+-- ANCHOR: map-eta-reduce
+
+theorem eta_contract : (fun x => g (h x)) = g ∘ h := by rfl
+
+example
+    {pre : StateProp α} {post : StateProp β}
+    (f : {a : α // pre a} → {b : β // post b}) :
+    RSignal.map f = RSignal.collect ∘ Signal.map f ∘ RSignal.split :=
+  calc RSignal.map f
+      = (fun s => RSignal.collect (fun t => f (RSignal.split s t)))   := rfl  -- unfold RSignal.map
+    _ = (fun s => RSignal.collect (Signal.map f (RSignal.split s)))   := rfl  -- fold Signal.map
+    _ = (fun s => (RSignal.collect ∘ Signal.map f ∘ RSignal.split) s) := rfl  -- fold ∘
+    _ = RSignal.collect ∘ Signal.map f ∘ RSignal.split                := rfl  -- η-reduce
+
+-- ANCHOR_END: map-eta-reduce
 end Ltl6

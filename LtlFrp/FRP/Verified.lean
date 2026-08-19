@@ -4,15 +4,19 @@ import Std.Tactic.BVDecide
 
 namespace FRP
 
--- ANCHOR: always-iff
+namespace RSignalSimplified
+-- This was our RSignal for part 6 only.
+-- ANCHOR: rsignal-simplified
+abbrev RSignal (α : Type) (inv : StateProp α) := { s : Signal α // (□ ⌜inv⌝) s }
+-- ANCHOR_END: rsignal-simplified
+end RSignalSimplified
+
+-- ANCHOR: always-atom-iff
 -- The reflection at its most general: `□` unpacks to a `∀` over time, definitionally.
 theorem always_iff {ψ : TraceProp β} (sig : Signal β) :
     (∀ i, ψ (drop i sig)) ↔ (□ ψ) sig := Iff.rfl
--- ANCHOR_END: always-iff
 
--- ANCHOR: always-atom-iff
--- The `∀`-bridge for atoms: the shape of a safety obligation. With `drop` putting the offset
--- first, `⌜inv⌝ (drop i sig)` reduces to `inv (sig i)`, so this is `always_iff` verbatim.
+-- The `∀`-bridge for atoms: the shape of a safety obligation.
 theorem always_atom_iff {inv : StateProp β} (sig : Signal β) :
     (∀ t, inv (sig t)) ↔ (□ ⌜inv⌝) sig := always_iff (ψ := ⌜inv⌝) sig
 -- ANCHOR_END: always-atom-iff
@@ -32,8 +36,10 @@ theorem until_atom_iff {inv done : StateProp β} (sig : Signal β) :
 -- ANCHOR_END: until-atom-iff
 
 -- ANCHOR: rsignal
-abbrev RSignal (α : Type) (inv : StateProp α) :=
-  { s : Signal α // (□ ⌜inv⌝) s }
+-- A refined signal: a signal bundled with a proof it satisfies an LTL formula `φ`.
+-- The safety special case `□ α // inv` is sugar for `RSignal α (□ ⌜inv⌝)` (see the `//` macro).
+abbrev RSignal (α : Type) (φ : TraceProp α) :=
+  { s : Signal α // φ s }
 -- ANCHOR_END: rsignal
 
 structure RS (α : Type) where
@@ -56,10 +62,10 @@ structure RS (α : Type) where
     | `(□ $α) => `(Signal $α)
 
   macro_rules (kind := refinedSig)
-    | `(□ $α // $inv) => `(RSignal $α $inv)
+    | `(□ $α // $inv) => `(RSignal $α (□ ⌜$inv⌝))
 
   macro_rules (kind := outerRefinedSig)
-    | `((□ $α) // $inv) => `(RSignal $α $inv)
+    | `((□ $α) // $inv) => `(RSignal $α (□ ⌜$inv⌝))
 
   macro_rules (kind := pointwiseRefined)
     | `(□ ($α // $inv)) => `(Signal { x : $α // $inv x })
@@ -130,8 +136,8 @@ def RSignal.map
   {pre: α → Prop}
   {post: β → Prop}
   (f: {a: α // pre a} → {b : β // post b})
-  : (□ α // pre) → (□ β // post) := fun s =>
-    (fun t => f (RSignal.split s t)) |> RSignal.collect
+  : (□ α // pre) → (□ β // post) :=
+    RSignal.collect ∘ Signal.map f ∘ RSignal.split
 -- ANCHOR_END: rsignal-map
 
 -- ANCHOR: rsignal-map2

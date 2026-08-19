@@ -1,4 +1,5 @@
 import LtlFrp.Trace
+import LtlFrp.Structures
 
 namespace FRP
 -- ANCHOR: signal
@@ -96,5 +97,32 @@ instance : Applicative Signal where
   pure := Signal.const
   seq sf sx := Signal.map2 (· ·) sf (sx ())
 -- ANCHOR_END: signal-applicative
+
+-- ANCHOR: now
+def now (s : Signal α) : α := s 0
+-- ANCHOR_END: now
+
+namespace DropV0
+-- ANCHOR: drop
+def drop (n : Nat) (s : Signal σ) : Signal σ := fun n' => s (n + n')
+-- ANCHOR_END: drop
+end DropV0
+
+-- ANCHOR: drop_v2
+def drop (s : Signal α) : Signal (Signal α) := fun n => fun n' => s (n + n')
+-- ANCHOR_END: drop_v2
+
+
+-- ANCHOR: signal-comonad
+instance : Comonad Signal where
+  extract := now
+  extend cm f := f <$> (drop cm)
+
+  lid := by intros; unfold now drop; simp [Functor.map, Nat.zero_add]
+  rid := by intros; funext t; simp [now, drop, Functor.map, Nat.add_zero]
+  assoc := by
+    intros; funext t
+    simp [Functor.map]; unfold drop Signal.map; simp [Nat.add_assoc]
+-- ANCHOR_END: signal-comonad
 
 end FRP
