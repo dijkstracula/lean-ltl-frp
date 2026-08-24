@@ -13,6 +13,7 @@ class Monad (m : Type → Type) where
   assoc : bind (bind ma f) g = bind ma (fun a => bind (f a) g)
 -- ANCHOR_END: monad
 
+
 -- ANCHOR: monad_ex
 inductive Perhaps α where
   | nothing : Perhaps α
@@ -40,7 +41,6 @@ class Comonad (w : Type → Type) where
   rid: extend wa extract = wa
   assoc: extend (extend wa f) g = extend wa (fun wa' => g (extend wa' f))
 -- ANCHOR_END: comonad
-
 
 namespace Examples
 

@@ -30,6 +30,51 @@ example : RSignal.collect evens = evens' := by
 def incr : (i : {i : Int // i ≥ 0}) → {i : Int // i > 0} := fun i => ⟨i.val + 1, by lia⟩
 #check (incr <$$> ·) -- (□ Int // ⌜· ≥ 0⌝) → (□ Int // ⌜· > 0⌝)
 
-instance : FRP.Sig
+namespace Comonads
+
+-- ANCHOR: comonad_v0
+class Comonad (w : Type → Type) where
+  extract : w α → α
+  extend  : w α → (w α → β) → w β
+
+  lid: extract (extend wa f) = f wa
+  rid: extend wa extract = wa
+  assoc: extend (extend wa f) g = extend wa (fun wa' => g (extend wa' f))
+-- ANCHOR_END: comonad_v0
+
+-- ANCHOR: extend'
+def Comonad.extend' [Comonad w] (f : w α → β) (wa : w α) : w β := extend wa f
+-- ANCHOR_END: extend'
+
+-- ANCHOR: signal-comonad
+instance : Comonad FRP.Signal where
+  extract := FRP.now
+  extend cm f := f <$> (drop cm)
+
+  lid := by intro α sig β f; unfold FRP.drop; simp [FRP.now, Functor.map, Nat.zero_add]
+  rid := by intros α sig; funext t; simp [FRP.now, Functor.map, FRP.drop, Nat.add_zero]
+  assoc := by
+    intros; funext t
+    simp [Functor.map]; unfold FRP.drop Signal.map; simp [Nat.add_assoc]
+-- ANCHOR_END: signal-comonad
+end Comonads
+
+namespace IMonadV0
+-- ANCHOR: imonad_v0
+class IMonad (m : StateProp α → Type → Type) where
+  -- The operations that an indexed monad supports...
+  pure : α → m inv α
+  bind : m inv α → (α → m inv β) → m inv β
+
+  -- ...and proofs of the monads laws
+  lid: bind (pure a) f = f a
+  rid : bind ma pure = ma
+  assoc : bind (bind ma f) g = bind ma (fun a => bind (f a) g)
+
+-- ANCHOR_END: imonad_v0
+
+end IMonadV0
+
+
 
 end Ltl7

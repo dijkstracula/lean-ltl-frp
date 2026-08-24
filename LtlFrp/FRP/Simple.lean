@@ -112,17 +112,4 @@ end DropV0
 def drop (s : Signal α) : Signal (Signal α) := fun n => fun n' => s (n + n')
 -- ANCHOR_END: drop_v2
 
-
--- ANCHOR: signal-comonad
-instance : Comonad Signal where
-  extract := now
-  extend cm f := f <$> (drop cm)
-
-  lid := by intros; unfold now drop; simp [Functor.map, Nat.zero_add]
-  rid := by intros; funext t; simp [now, drop, Functor.map, Nat.add_zero]
-  assoc := by
-    intros; funext t
-    simp [Functor.map]; unfold drop Signal.map; simp [Nat.add_assoc]
--- ANCHOR_END: signal-comonad
-
 end FRP

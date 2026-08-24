@@ -14,7 +14,7 @@ end RSignalSimplified
 -- ANCHOR: always-atom-iff
 -- The reflection at its most general: `□` unpacks to a `∀` over time, definitionally.
 theorem always_iff {ψ : TraceProp β} (sig : Signal β) :
-    (∀ i, ψ (drop i sig)) ↔ (□ ψ) sig := Iff.rfl
+    (∀ i, ψ (drop sig i)) ↔ (□ ψ) sig := Iff.rfl
 
 -- The `∀`-bridge for atoms: the shape of a safety obligation.
 theorem always_atom_iff {inv : StateProp β} (sig : Signal β) :
