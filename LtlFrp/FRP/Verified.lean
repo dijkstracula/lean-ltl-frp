@@ -4,15 +4,7 @@ import Std.Tactic.BVDecide
 
 namespace FRP
 
-namespace RSignalSimplified
--- This was our RSignal for part 6 only.
--- ANCHOR: rsignal-simplified
-abbrev RSignal (α : Type) (inv : StateProp α) := { s : Signal α // (□ ⌜inv⌝) s }
--- ANCHOR_END: rsignal-simplified
-end RSignalSimplified
-
 -- ANCHOR: always-atom-iff
--- The reflection at its most general: `□` unpacks to a `∀` over time, definitionally.
 theorem always_iff {ψ : TraceProp β} (sig : Signal β) :
     (∀ i, ψ (drop sig i)) ↔ (□ ψ) sig := Iff.rfl
 
@@ -39,7 +31,7 @@ theorem until_atom_iff {inv done : StateProp β} (sig : Signal β) :
 -- A refined signal: a signal bundled with a proof it satisfies an LTL formula `φ`.
 -- The safety special case `□ α // inv` is sugar for `RSignal α (□ ⌜inv⌝)` (see the `//` macro).
 abbrev RSignal (α : Type) (φ : TraceProp α) :=
-  { s : Signal α // φ s }
+  { s : Signal α // s ⊨ φ }
 -- ANCHOR_END: rsignal
 
 structure RS (α : Type) where
@@ -53,6 +45,7 @@ structure RS (α : Type) where
 
   syntax (name := signalRaw) "□ " term:max : signalTree
   syntax (name := refinedSig) signalTree " // " term:51 : term
+  syntax (name := traceRefinedSig) signalTree " ⊨ " term:51 : term
   syntax (name := outerRefinedSig) "(" signalTree ")" " // " term:51 : term
   syntax (name := pointwiseRefined) "□ " "(" term " // " term ")" : term
   -- ANCHOR_END: signal-syntax
@@ -63,6 +56,9 @@ structure RS (α : Type) where
 
   macro_rules (kind := refinedSig)
     | `(□ $α // $inv) => `(RSignal $α (□ ⌜$inv⌝))
+
+  macro_rules (kind := traceRefinedSig)
+    | `(□ $α ⊨ $inv) => `(RSignal $α $inv)
 
   macro_rules (kind := outerRefinedSig)
     | `((□ $α) // $inv) => `(RSignal $α (□ ⌜$inv⌝))

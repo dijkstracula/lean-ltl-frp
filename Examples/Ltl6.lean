@@ -10,6 +10,14 @@ import LtlFrp
 namespace Ltl6
 open FRP
 
+-- ANCHOR: rsignal-stateprop
+-- A refined signal is a `Signal α`, such that some proposition on a given
+-- state always holds.
+-- Notation: `(□ $α // $inv)`
+abbrev RSignal (inv : StateProp α) :=
+  { s : Signal α // (□ ⌜inv⌝) s }
+-- ANCHOR_END: rsignal-stateprop
+
 abbrev signedHalf (B : Int) : StateProp Int := fun x => -B ≤ x ∧ x < B
 abbrev unsignedMax (M : Int) : StateProp Int := fun x => 0 ≤ x ∧ x < M
 

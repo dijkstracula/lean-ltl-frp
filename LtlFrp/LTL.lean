@@ -23,12 +23,16 @@ def until_then (p1 : Trace σ → Prop) (p2 : Trace σ → Prop) (t : Trace σ) 
 -- ANCHOR_END: until
 
 -- ANCHOR: ltl-notation
-prefix:max "□ " => always
-prefix:max "◇ " => eventually
-prefix:max "○ " => next
+prefix:60 "□ " => always
+prefix:60 "◇ " => eventually
+prefix:60 "○ " => next
 infixr:55 " U " => LTL.until_then
 notation:max "⌜" p "⌝" => LTL.atom p
 -- ANCHOR_END: ltl-notation
+
+-- Prefix modalities include function application in their operand.
+example (parameterized : Nat → TraceProp σ) :
+    □ parameterized 0 = always (parameterized 0) := rfl
 
 -- "True" as a trace predicate: holds for any trace, at any time
 -- ANCHOR: true
@@ -47,7 +51,6 @@ def implies (p q : TraceProp σ) : TraceProp σ :=
 
 infixr:20 " ⟹ " => implies
 -- ANCHOR_END: implies
-
 
 -- ANCHOR: eventually-as-until
 example : ◇ p = true U p := by

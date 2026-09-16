@@ -7,6 +7,8 @@ class Monad (m : Type → Type) where
   pure : α → m α -- Inject a value into the computational context
   bind : m α → (α → m β) → m β -- Sequence a computation
 
+
+class LawfulMonad m extends Monad m where
   -- ...and proofs of the monads laws
   lid: bind (pure a) f = f a
   rid : bind ma pure = ma
@@ -19,7 +21,7 @@ inductive Perhaps α where
   | nothing : Perhaps α
   | indeed (a : α) : Perhaps α
 
-instance : Monad Perhaps where
+instance : LawfulMonad Perhaps where
   pure a := Perhaps.indeed a
   bind per f := match per with
     | Perhaps.nothing => Perhaps.nothing
@@ -37,6 +39,7 @@ class Comonad (w : Type → Type) where
   extract : w α → α
   extend  : w α → (w α → β) → w β
 
+class LawfulComonad w extends Comonad w where
   lid: extract (extend wa f) = f wa
   rid: extend wa extract = wa
   assoc: extend (extend wa f) g = extend wa (fun wa' => g (extend wa' f))

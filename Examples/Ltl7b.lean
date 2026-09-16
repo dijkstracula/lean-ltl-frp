@@ -1,114 +1,103 @@
--- Worked example for lean-ltl post 7b ("Hoare Logic and loop invariants redux").
--- The combinators this post is about (hoare_skip / hoare_seq / hoare_if / iter_one /
--- Event.when / RSignal.while, plus <$$>, ⦃⦄, ⟹) live in LtlFrp.FRP.Hoare and
--- LtlFrp.FRP.
+-- example code for lean-ltl-7
 
 import LtlFrp
 
-def Nat.factorial : Nat → Nat
-| 0 => 1
-| (n + 1) => (n + 1) * n.factorial
-
-namespace Ltl7
+namespace Ltl7b
 open FRP
 
--- The Hoare rules are functor laws: skip = identity map, seq = composition.
-example : hoare_seq (g <$$> ·) (f <$$> ·) = (g <$$> f <$$> ·) := by rfl
+namespace Monads
 
-example {P : StateProp α}
-    (f : {a : α // P a} → {a : α // P a}) :
-    ∀ s, hoare_skip (f <$$> s) = (f <$$> s) := by intro s; rfl
+-- ANCHOR: monad_signal_v0
+instance : Monad FRP.Signal where
+  pure := Signal.const
+  bind := fun s f => fun t => (f <$> s) t t
+-- ANCHOR_END: monad_signal_v0
 
-example {P : StateProp α} {Q : StateProp β} {R : StateProp γ}
-        (f : {a : α // P a} → {b : β // Q b})
-        (g : {b : β // Q b} → {c : γ // R c}) :
-    -- NOTE: argument order matches the library `hoare_seq := Function.comp`;
-    -- the scratch wrote this in the opposite (flip-comp) order.
-    hoare_seq (g <$$> ·) (f <$$> ·) = ((g ∘ f) <$$> ·) := by rfl
+end Monads
 
--- A two-step refinement pipeline: {i = 0} ⟹ {i > 0} ⟹ {i ≥ 0}.
-namespace IncrSqrt
-def incr (i : {i : Int // i = 0}) : {i : Int // i > 0} := ⟨i.val + 1, by lia⟩
-def sqrt (i : {i : Int // i > 0}) : {i : Int // i >= 0} := ⟨i.val, by lia⟩
+namespace Comonads
+-- ANCHOR: comonad_v0
+class Comonad (w : Type → Type) where
+  extract : w α → α
+  extend  : w α → (w α → β) → w β
 
-#check (incr <$$> ·)
+class LawfulComonad w extends Comonad w where
+  lid: extract (extend wa f) = f wa
+  rid: extend wa extract = wa
+  assoc: extend (extend wa f) g = extend wa (fun wa' => g (extend wa' f))
+-- ANCHOR_END: comonad_v0
 
-def incr_sig : ⦃ i : Int // i = 0 ⦄ ⟹ ⦃ i : Int // i > 0 ⦄ := FRP.RSignal.map incr
-def sqrt_sig : ⦃ i : Int // i > 0 ⦄ ⟹ ⦃ i : Int // i ≥ 0 ⦄ := FRP.RSignal.map sqrt
+-- ANCHOR: extend'
+@[simp]
+def Comonad.extend' [Comonad w] : (w α → β) → w α → w β := flip extend
+-- ANCHOR_END: extend'
 
-def z : □ Int // (· = 0)  := FRP.RSignal.const ⟨0, by lia⟩
-def z2 : □ Int // (· > 0) := incr_sig z
-def z3 : □ Int // (· ≥ 0) := sqrt_sig z2
+namespace coKleisli_v0
+-- ANCHOR: coKleisli_v0
+@[simp]
+def comonad_composition [Comonad w]: (w γ → β) → (w α → γ) → (w α → β) :=
+  fun g f => g ∘ (Comonad.extend' f)
 
-#check (FRP.RSignal.weaken (by lia) : □ Int // (· = 0) → □ Int // (· >= 0))
-end IncrSqrt
+infixr:95 " =<= " => comonad_composition
+-- ANCHOR_END: coKleisli_v0
 
--- Combining two constant signals with map2.
-namespace AddDemo
-def z1 : □ Int // (· = 5)  := FRP.RSignal.const ⟨5, by lia⟩
-def z2 : □ Int // (· = 7)  := FRP.RSignal.const ⟨7, by lia⟩
-def z3 : □ Int // (· > 10) :=
-  FRP.RSignal.map2 (fun ⟨a, ah⟩ ⟨b, bh⟩ => ⟨a + b, by lia⟩) z1 z2
-end AddDemo
+open Comonad
 
--- Syracuse / Collatz: hoare_if picks the even/odd branch, preserving n > 0.
-def syra_even : {n : Int // n > 0 ∧ n % 2 = 0} → {m : Int // m > 0} :=
-  fun ⟨n, ⟨hPos, hEven⟩⟩ => ⟨n / 2, by omega⟩
+-- ANCHOR: coKleisli_v0_laws
+theorem lid_equiv [Comonad w] (f : w α → β):
+      (extract =<= f = f)
+        ↔
+      (∀ wa : w α, extract (extend wa f) = f wa) := by
+  simp [comonad_composition]; unfold Function.comp
+  constructor
+  · intro h wa
+    change (fun wa => extract (extend wa f)) = f at h
+    apply congrFun h wa
+  · intro h
+    funext wa
+    exact h wa
 
-def syra_odd : {n : Int // n > 0 ∧ ¬ (n % 2 = 0)} → {m : Int // m > 0} :=
-  fun ⟨n, ⟨hPos, hOdd⟩⟩ => ⟨(3*n + 1)/2, by omega⟩
+theorem rid_equiv [Comonad w] (f : w α → β) :
+  (f =<= extract = f)
+    ↔
+  (∀ wa : w α, extend wa extract = wa) := by sorry
 
-def syra_step_val : {n : Int // n > 0} → {n : Int // n > 0} :=
-  fun ⟨n, hPos⟩ =>
-    if h : n % 2 = 0
-    then syra_even ⟨n, ⟨hPos, h⟩⟩
-    else syra_odd ⟨n, ⟨hPos, h⟩⟩
+theorem fusion [Comonad w]
+    (f : w α → β)
+    (g : w β → γ)
+  : extend' g ∘ extend' f = extend' (g =<= f) := by sorry
 
-def syra : (□ Int // (· > 0)) → (□ Int // (· > 0)) :=
-  hoare_if (· % 2 = 0) syra_even syra_odd
+-- ANCHOR_END: coKleisli_v0_laws
 
-def positives : □ Int // (· > 0) :=
-  FRP.RSignal.collect (fun t => ⟨ Int.ofNat t + 1, by lia⟩)
+end coKleisli_v0
 
-def syracuse_trajectory (n : Int) (h_pos : n > 0) : □ Int // (· > 0) :=
-  FRP.scan syra_step_val ⟨n, h_pos⟩
+-- ANCHOR: signal-comonad
+instance : LawfulComonad FRP.Signal where
+  extract := FRP.now
+  extend cm f := f <$> (drop cm)
 
-#eval (List.range 10) |>.map (syracuse_trajectory 42 (by lia)).val
+  lid := by intro α sig β f; unfold FRP.drop; simp [FRP.now, Functor.map, Nat.zero_add]
+  rid := by intros α sig; funext t; simp [FRP.now, Functor.map, FRP.drop, Nat.add_zero]
+  assoc := by
+    intros; funext t
+    simp [Functor.map]; unfold FRP.drop Signal.map; simp [Nat.add_assoc]
+-- ANCHOR_END: signal-comonad
+end Comonads
 
-def trajectory (n : Int) (hPos : 0 < n) : □ Int // (· > 0) :=
-  FRP.scan syra_step_val ⟨n, hPos⟩
+namespace IMonadV0
+-- ANCHOR: imonad_v0
+class IMonad (m : StateProp α → Type → Type) where
+  -- The operations that an indexed monad supports...
+  pure : α → m inv α
+  bind : m inv α → (α → m inv β) → m inv β
 
-#eval (List.range 10) |>.map (trajectory 10 (by lia)).val
+  -- ...and proofs of the monads laws
+  lid: bind (pure a) f = f a
+  rid : bind ma pure = ma
+  assoc : bind (bind ma f) g = bind ma (fun a => bind (f a) g)
 
--- Factorial loop with the invariant z = i!.
-namespace Fact
-def fact_inv (_ : Nat) : StateProp (Nat × Nat) :=
-  fun (i, z) => z = i.factorial
+-- ANCHOR_END: imonad_v0
 
-def i : □ Nat := FRP.scan (· + 1) 0
-def z : □ Nat := (·.factorial) <$> i
+end IMonadV0
 
-def fact_loop : □ (Nat × Nat) // (fun ⟨i, z⟩ => z = i.factorial) :=
-  let s : □ (Nat × Nat) := Prod.mk <$> i <*> z
-  have inv : ∀ t, (s t).2 = (s t).1.factorial := by intro t; rfl
-  FRP.RSignal.collect (fun t => ⟨s t, inv t⟩)
-
-#eval (fact_loop.val 5)
-
-def fact_step (n : Nat) : {env // fact_inv n env} → {env // fact_inv n env} :=
-  fun ⟨(i, z), HFact⟩ =>
-    if h : i < n
-    then ⟨(i+1, z*(i+1)), by
-      rw [HFact]; simp [fact_inv, Nat.factorial]; lia⟩
-    else ⟨(i, z), HFact⟩
-
--- DROPPED (broken WIP in the scratch): `fact_done`, the "while i < n" exit event via
--- RSignal.while. Its termination witness `⟨n, by …⟩` fails — the proof reduces to `False`.
-end Fact
-
-def counterEvent (n : Nat) (h : n > 0) : FRP.Event Int :=
-  let f t := if 1 ≤ t ∧ t ≤ n then some (t : Int) else none
-  have live : FRP.fires f := ⟨1, by simp [f]; lia⟩
-  {f, live}
-
-end Ltl7
+end Ltl7b

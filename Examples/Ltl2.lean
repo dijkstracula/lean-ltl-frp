@@ -20,7 +20,7 @@ def orangeTrace :=
 #eval orangeTrace 42
 
 def hopperEmpty (s: VMState) : Prop := s.coins = 0
-
 example : hopperEmpty (orangeTrace 0) := by rfl
+example : orangeTrace ⊨ ⌜hopperEmpty⌝ := by rfl
 
 end VM

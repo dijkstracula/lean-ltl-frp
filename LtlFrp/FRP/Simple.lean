@@ -92,6 +92,12 @@ instance : Functor Signal where
   map := Signal.map
 -- ANCHOR_END: signal-functor
 
+-- ANCHOR: signal-map
+@[simp]
+def Signal.bind (f: α → Signal β) (s : Signal α) : Signal β :=
+  fun t => (f <$> s) t t
+-- ANCHOR_END: signal-map
+
 -- ANCHOR: signal-applicative
 instance : Applicative Signal where
   pure := Signal.const
@@ -100,6 +106,10 @@ instance : Applicative Signal where
 
 -- ANCHOR: now
 def now (s : Signal α) : α := s 0
+-- ANCHOR_END: now
+
+-- ANCHOR: now
+def next (s : Signal α) : α := s 1
 -- ANCHOR_END: now
 
 namespace DropV0
